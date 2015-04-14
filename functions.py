@@ -1,7 +1,6 @@
-from __future__ import division
 from operator import mul
-from math import floor, sin, cos, sqrt, exp, pi, e
 import random
+import numpy as np
 
 from solution import Solution
 
@@ -9,23 +8,20 @@ from solution import Solution
 class Function(object):
     def __init__(self, num, upper, lower, dims, maximisation):
         self.num = num
-        self.upper = upper
-        self.lower = lower
+        self.upper = np.array(upper)
+        self.lower = np.array(lower)
         self.dims = dims
         self.max = maximisation
     
     def generateSolution(self):
-        return Solution(self.dims, [random.uniform(self.lower[i],self.upper[i]) for i in range(self.dims)])
+        return Solution(self.dims, np.array([random.uniform(self.lower[i],self.upper[i]) for i in range(self.dims)]))
         
     def getFitnesses(self, pop):
         for sol in pop:
             sol.fit = self.getFitness(sol.pos)
             
     def inside(self, sol):
-        for i in range(self.dims):
-            if sol.pos[i] < self.lower[i] or sol.pos[i] > self.upper[i]:
-                return False
-        return True
+        return np.all(sol.pos > self.lower) and np.all(sol.pos < self.upper)
 
 def y(i,x):
     return 1 + (x[i] + 1)/4
@@ -42,51 +38,53 @@ def u(i, a, k, m):
 def getFunction(func, n):
     if (func == 1):
         result =  Function(func, [100]*n, [-100]*n, n, False)
-        result.getFitness = lambda x: sum([i*i for i in x])
+        result.getFitness = lambda x: np.sum(x*x)
         return result
     elif (func == 2):
         result = Function(func, [10]*n,[-10]*n, n, False)
-        result.getFitness = lambda x: sum(map(abs,x)) + reduce(mul, map(abs,x))
+        result.getFitness = lambda x: np.sum(np.abs(x)) + np.prod(np.abs(x))
         return result
     elif (func == 3):
         result = Function(func, [100]*n, [-100]*n, n, False)
-        result.getFitness = lambda x: sum([sum([x[j] for j in range(0, i+1)])**2 for i in range(0,n)])
+        result.getFitness = lambda x: np.sum(np.array([np.sum(x[0:i])**2 for i in range(n)]))
         return result
     elif (func == 4):
         result = Function(func, [100]*n, [-100]*n, n, False)
-        result.getFitness = lambda x: max(map(abs,x))
+        result.getFitness = lambda x: np.amax(np.abs(x))
         return result
     elif (func == 5):
         result = Function(func, [30]*n, [-30]*n, n, False)
-        result.getFitness = lambda x: sum([100*(x[i+1] - x[i]**2)**2 + (x[i] - 1)**2 for i in range(0,n-1)])
+        result.getFitness = lambda x: np.sum(100*(x[1:n-1] - x[0:n-2]**2)**2 + (x[0:n-2]-1)**2)
         return result
     elif (func == 6):
         result = Function(func, [100]*n, [-100]*n, n, False)
-        result.getFitness = lambda x: sum([floor(i + 0.5)**2 for i in x])
+        result.getFitness = lambda x: np.sum(np.floor(x+0.5)**2)
         return result
     elif (func == 7):
         result = Function(func, [1.28]*n, [-1.28]*n, n, False)
-        result.getFitness = lambda x: sum([(i+1)*x[i]**4 + random.random() for i in range(0,n)])
+        result.getFitness = lambda x: np.sum(np.arange(1,n+1)*x**4) + np.random.random()
         return result
     elif (func == 8):
         result = Function(func, [500]*n, [-500]*n, n, False)
-        result.getFitness = lambda x: sum([-i*sin(sqrt(abs(i))) for i in x])
+        result.getFitness = lambda x: np.sum(-x*np.sin(np.sqrt(np.abs(x))))
         return result
     elif (func == 9):
         result = Function(func, [5.12]*n, [-5.12]*n, n, False)
-        result.getFitness = lambda x: sum([i*i - 10*cos(2*pi*i) + 10 for i in x])
+        result.getFitness = lambda x: np.sum(x**2 - 10*np.cos(2*np.pi*x) + 10)
         return result
     elif (func == 10):
         result = Function(func, [32]*n, [-32]*n, n, False)
-        result.getFitness = lambda x: -20*exp(-0.2*sqrt(1/n*sum([i*i for i in x]))) - exp(1/n * sum([cos(2*pi*i) for i in x])) + 20 + e
+        result.getFitness = lambda x: -20*np.exp(-0.1*np.sqrt(1/n*np.sum(x*x))) - np.exp(1/n * np.sum(np.cos(2*np.pi*x))) + 20 + np.exp(1)
         return result
     elif (func == 11):
         result = Function(func, [600]*n, [-600]*n, n, False)
-        result.getFitness = lambda x: 1/4000*sum([i*i for i in x]) - reduce(mul, [cos(x[i]/(i+1)) for i in range(0,n)]) + 1
+        result.getFitness = lambda x: 1/4000 * np.sum(x*x) - np.prod(np.cos(x/np.sqrt(np.arange(1,n+1)))) + 1
         return result
+        
     elif (func == 12):
         result = Function(func, [50]*n, [-50]*n, n, False)
-        result.getFitness = lambda x: pi/n * (10*sin(pi*y(0,x)) + sum([(y(i,x)-1)**2*(1+10*sin(pi*y(i,x))**2) for i in range(0,n)])) + \
+        result.getFitness = lambda x: np.pi/n*(10*np.sin(np.pi)) + np.sum(np.array([u(i,10,100,4) for i in x]))
+        pi/n * (10*sin(pi*y(0,x)) + sum([(y(i,x)-1)**2*(1+10*sin(pi*y(i,x))**2) for i in range(0,n)])) + \
             sum([u(i,10,100,4) for i in x])
         return result
     elif (func == 13):

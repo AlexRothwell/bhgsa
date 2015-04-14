@@ -1,4 +1,3 @@
-from __future__ import division
 import random
 import csv
 from timeit import default_timer
@@ -53,10 +52,9 @@ def calcMasses(pop, best, worst):
 
 def calcMovement(func, pop):
     for sol in pop:
-        for i in range(func.dims):
-            sol.vel[i] *= random.random()
-            sol.vel[i] += sol.force[i]
-            sol.pos[i] += sol.vel[i]
+        sol.vel *= np.random.random(func.dims)
+        sol.vel += sol.force
+        sol.pos += sol.vel
 
 def reinitialiseSolutions(func, pop):
     for i in range(len(pop)):
@@ -67,31 +65,30 @@ def initialise(func, size):
     return [func.generateSolution() for i in range(size)]
     
 def outputProgress(t, pop, writer):
-    writer.writerow(map(str,[t] + [sol.fit for sol in pop]))
+    writer.writerow(list(map(str,[t] + [sol.fit for sol in pop])))
     
 def initOutput(conditions):
-    with open(OUTPUT_FILE + conditions.desc + ".csv",'wb') as out:
+    with open(OUTPUT_FILE + conditions.desc + ".csv",'w', newline='') as out:
         writer = csv.writer(out)
         writer.writerow(["FUNCTION","SOLVER","BEST","ITERATIONS"])
     
 def output(best, t, force, func, conditions):
-    with open(OUTPUT_FILE + conditions.desc + ".csv",'ab') as out:
+    with open(OUTPUT_FILE + conditions.desc + ".csv",'a', newline='') as out:
         writer = csv.writer(out)
-        writer.writerow(map(str,[func.num] + [force.desc] + [best, t]))
+        writer.writerow(list(map(str,[func.num] + [force.desc] + [best, t])))
 
 def getDist(sol, kth):
-    return sqrt(sum([(sol[i]-kth[i])**2 for i in range(len(sol))]))
+    return sqrt(np.sum((sol-kth)**2))
     
 def basicForce(func, pop, kbest, G):
     for sol in pop:
         pos = sol.pos
-        sol.force = [0]*func.dims
+        sol.force = np.zeros(func.dims)
         for kth in kbest:
             if sol is not kth:
                 kth_pos = kth.pos
                 dist = getDist(pos,kth_pos)
-                for i in range(func.dims):
-                    sol.force[i] += random.random() * G * kth.mass * (kth_pos[i] - pos[i]) / dist
+                sol.force += np.random.random(func.dims) * G * kth.mass * (kth_pos - pos) / dist
     
 def iterationCondition(step, time):
     return step < MAX_T
@@ -103,11 +100,12 @@ def timeCondition(step, time):
 def gsa(function, pop_size, force, conditions, seed = None):
     if seed is not None:
         random.seed(seed)
+        np.random.seed(seed)
     population = initialise(function, pop_size)
     function.getFitnesses(population)
 
     #Open progress csv
-    with open(function.desc + ".csv",'wb') as prog:
+    with open(function.desc + ".csv",'w', newline='') as prog:
         t = 0
         writer = csv.writer(prog)
         outputProgress(t, population, writer)
