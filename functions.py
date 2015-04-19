@@ -1,6 +1,7 @@
 from operator import mul
 import random
 import numpy as np
+from numpy import sin, cos, pi, sum, prod
 
 from solution import Solution
 
@@ -38,15 +39,15 @@ def u(i, a, k, m):
 def getFunction(func, n):
     if (func == 1):
         result =  Function(func, [100]*n, [-100]*n, n, False)
-        result.getFitness = lambda x: np.sum(x*x)
+        result.getFitness = lambda x: sum(x*x)
         return result
     elif (func == 2):
         result = Function(func, [10]*n,[-10]*n, n, False)
-        result.getFitness = lambda x: np.sum(np.abs(x)) + np.prod(np.abs(x))
+        result.getFitness = lambda x: sum(np.abs(x)) + prod(np.abs(x))
         return result
     elif (func == 3):
         result = Function(func, [100]*n, [-100]*n, n, False)
-        result.getFitness = lambda x: np.sum(np.array([np.sum(x[0:i])**2 for i in range(n)]))
+        result.getFitness = lambda x: sum(np.array([sum(x[0:i])**2 for i in range(n)]))
         return result
     elif (func == 4):
         result = Function(func, [100]*n, [-100]*n, n, False)
@@ -54,42 +55,39 @@ def getFunction(func, n):
         return result
     elif (func == 5):
         result = Function(func, [30]*n, [-30]*n, n, False)
-        result.getFitness = lambda x: np.sum(100*(x[1:n-1] - x[0:n-2]**2)**2 + (x[0:n-2]-1)**2)
+        result.getFitness = lambda x: sum(100*(x[1:n-1] - x[0:n-2]**2)**2 + (x[0:n-2]-1)**2)
         return result
     elif (func == 6):
         result = Function(func, [100]*n, [-100]*n, n, False)
-        result.getFitness = lambda x: np.sum(np.floor(x+0.5)**2)
+        result.getFitness = lambda x: sum(np.floor(x+0.5)**2)
         return result
     elif (func == 7):
         result = Function(func, [1.28]*n, [-1.28]*n, n, False)
-        result.getFitness = lambda x: np.sum(np.arange(1,n+1)*x**4) + np.random.random()
+        result.getFitness = lambda x: sum(np.arange(1,n+1)*x**4) + np.random.random()
         return result
     elif (func == 8):
         result = Function(func, [500]*n, [-500]*n, n, False)
-        result.getFitness = lambda x: np.sum(-x*np.sin(np.sqrt(np.abs(x))))
+        result.getFitness = lambda x: sum(-x*sin(np.sqrt(np.abs(x))))
         return result
     elif (func == 9):
         result = Function(func, [5.12]*n, [-5.12]*n, n, False)
-        result.getFitness = lambda x: np.sum(x**2 - 10*np.cos(2*np.pi*x) + 10)
+        result.getFitness = lambda x: sum(x**2 - 10*cos(2*pi*x) + 10)
         return result
     elif (func == 10):
         result = Function(func, [32]*n, [-32]*n, n, False)
-        result.getFitness = lambda x: -20*np.exp(-0.1*np.sqrt(1/n*np.sum(x*x))) - np.exp(1/n * np.sum(np.cos(2*np.pi*x))) + 20 + np.exp(1)
+        result.getFitness = lambda x: -20*np.exp(-0.1*np.sqrt(1/n*sum(x*x))) - np.exp(1/n * sum(cos(2*pi*x))) + 20 + np.exp(1)
         return result
     elif (func == 11):
         result = Function(func, [600]*n, [-600]*n, n, False)
-        result.getFitness = lambda x: 1/4000 * np.sum(x*x) - np.prod(np.cos(x/np.sqrt(np.arange(1,n+1)))) + 1
+        result.getFitness = lambda x: 1/4000 * sum(x*x) - prod(cos(x/np.sqrt(np.arange(1,n+1)))) + 1
         return result
-        
     elif (func == 12):
         result = Function(func, [50]*n, [-50]*n, n, False)
-        result.getFitness = lambda x: np.pi/n*(10*np.sin(np.pi)) + np.sum(np.array([u(i,10,100,4) for i in x]))
-        pi/n * (10*sin(pi*y(0,x)) + sum([(y(i,x)-1)**2*(1+10*sin(pi*y(i,x))**2) for i in range(0,n)])) + \
-            sum([u(i,10,100,4) for i in x])
+        result.getFitness = lambda x: pi/n*(10*sin(pi*y(0,x)) + sum(np.array([(y(i,x)-1)**2*(1+10*sin(pi*y(i,x))**2) for i in range(0,n)]))) + sum(np.array([u(i,10,100,4) for i in x]))
         return result
     elif (func == 13):
         result = Function(func, [50]*n, [-50]*n, n, False)
-        result.getFitness = lambda x: 0.1*(sin(3*pi*x[0])**2 + sum([(i-1)**2*(1+sin(3*pi*i+1)**2)for i in x]) + (x[n-1]-1)**2*(1+sin(2*pi*x[n-1]))) + sum([u(i,5,100,4) for i in x])
+        result.getFitness = lambda x: 0.1*(sin(3*pi*x[0])**2 + sum((x-1)**2*(1 + 10*sin(3*pi*x + 1)**2)) + (x[n-1]-1)**2*(1+sin(2*pi*x[n-1]))) + sum(np.array([u(i,5,100,4) for i in x]))
         return result
     elif (func == 14):
         result = Function(func, [65.53]*2, [-65.53]*2, 2, False)
@@ -123,7 +121,7 @@ def getFunction(func, n):
         return result
     elif (func == 17):
         result = Function(func, [10,15], [-5,0], 2, False)
-        result.getFitness = lambda x: (x[1]-(5.1/(4*pi*pi))*x[0]*x[0]+5/pi*x[0]-6)**2 + 10*(1-1/(8*pi))*cos(x[0]) + 10
+        result.getFitness = lambda x: (x[1]-(5.1/(4*pi**2))*x[0]*x[0]+5/pi*x[0]-6)**2 + 10*(1-1/(8*pi))*cos(x[0]) + 10
         return result
     elif (func == 18):
         result = Function(func, [5]*2, [-5]*2, 2, False)
@@ -137,7 +135,7 @@ def getFunction(func, n):
             p=[[.3689, .117, .2673],[.4699, .4387, .747],[.1091, .8732, .5547],[.03815, .5743, .8828]]
             res = 0
             for i in range(0,4):
-                res += c[i]*exp(-sum([a[i][j]*(x[j]-p[i][j])**2 for j in range(0,3)]))
+                res += c[i]*np.exp(-sum(a[i]*(x-p[i])**2))
             return -res
             
         result.getFitness = fit
@@ -150,7 +148,7 @@ def getFunction(func, n):
             p=[[.1312, .1696, .5569, .0124, .8283, .5886],[.2329, .4135, .8307, .3736, .1004, .9991],[.2348, .1415, .3522, .2883, .3047, .6650],[.4047, .8828, .8732, .5743, .1091, .0381]]
             res = 0
             for i in range(0,4):
-                res += c[i]*exp(-sum([a[i][j]*(x[j]-p[i][j])**2 for j in range(0,6)]))
+                res += c[i]*np.exp(-sum(a[i]*(x-p[i])**2))
             return -res
             
         result.getFitness = fit
@@ -162,8 +160,8 @@ def getFunction(func, n):
             c=[.1, .2, .2, .4, .4, .6, .3, .7, .5, .5]
             res = 0
             for i in range(0,5):
-                res += 1/(sum([x[j]-a[i][j] for j in range(0,4)]) + c[i])
-            return -res
+                res += 1/ ((x-a[i]).dot((x-a[i])[:,None]) + c[i])
+            return -res[0]
 
         result.getFitness = fit
         return result
@@ -174,8 +172,8 @@ def getFunction(func, n):
             c=[.1, .2, .2, .4, .4, .6, .3, .7, .5, .5]
             res = 0
             for i in range(0,7):
-                res += 1/(sum([x[j]-a[i][j] for j in range(0,4)]) + c[i])
-            return -res
+                res += 1/ ((x-a[i]).dot((x-a[i])[:,None]) + c[i])
+            return -res[0]
 
         result.getFitness = fit
         return result
@@ -186,8 +184,8 @@ def getFunction(func, n):
             c=[.1, .2, .2, .4, .4, .6, .3, .7, .5, .5]
             res = 0
             for i in range(0,10):
-                res += 1/(sum([x[j]-a[i][j] for j in range(0,4)]) + c[i])
-            return -res
+                res += 1/ ((x-a[i]).dot((x-a[i])[:,None]) + c[i])
+            return -res[0]
 
         result.getFitness = fit
         return result
