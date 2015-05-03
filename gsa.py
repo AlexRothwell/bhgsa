@@ -1,7 +1,7 @@
 import random
-import csv
 from timeit import default_timer
 import numpy as np
+import pandas as pd
 from math import exp, ceil, sqrt
 
 from solution import Solution
@@ -64,18 +64,13 @@ def reinitialiseSolutions(func, pop):
 def initialise(func, size):
     return [func.generateSolution() for i in range(size)]
     
-def outputProgress(t, pop, writer):
-    writer.writerow(list(map(str,[t] + [sol.fit for sol in pop])))
-    
-def initOutput(conditions):
-    with open(OUTPUT_FILE + conditions.desc + ".csv",'w', newline='') as out:
-        writer = csv.writer(out)
-        writer.writerow(["FUNCTION","SOLVER","BEST","ITERATIONS"])
+def formatProgress(t, pop, columns):
+    data = list(map(str,[t] + [sol.fit for sol in pop]))
+    return pd.Series(dict(zip(columns,data)))
     
 def output(best, t, force, func, conditions):
-    with open(OUTPUT_FILE + conditions.desc + ".csv",'a', newline='') as out:
-        writer = csv.writer(out)
-        writer.writerow(list(map(str,[func.num] + [force.desc] + [best, t])))
+    data = list(map(str,[func.num, force.desc, best, t]))
+    return pd.Series(dict(zip(["FUNCTION","SOLVER","BEST","ITERATIONS"],data)))
 
 def getDist(sol, kth):
     return sqrt(np.sum((sol-kth)**2))
@@ -104,41 +99,42 @@ def gsa(function, pop_size, force, conditions, seed = None):
     population = initialise(function, pop_size)
     function.getFitnesses(population)
 
-    #Open progress csv
-    with open(function.desc + ".csv",'w', newline='') as prog:
-        t = 0
-        writer = csv.writer(prog)
-        outputProgress(t, population, writer)
-        start = default_timer()
-        while (conditions(t,default_timer() - start)):
-            #Update functions
-            best, worst, G = update(function, population, t)
+    t = 0
+    #Track progress
+    progColumns = ["t"] + ["fitness" + str(i) for i in range(1,pop_size + 1)]
+    progress = pd.DataFrame(columns = progColumns)
+    progress = progress.append(formatProgress(t, population, progColumns), ignore_index = True)
+    start = default_timer()
+    while (conditions(t,default_timer() - start)):
+        #Update functions
+        best, worst, G = update(function, population, t)
 
-            #Work out kbest
-            kbest = updateBest(function, population, t)
+        #Work out kbest
+        kbest = updateBest(function, population, t)
+        
+        #Mass calculations
+        calcMasses(population, best, worst)
+
+        #Force calculations
+        force(function, population, kbest, G)
+
+        #Calculate velocity and position
+        calcMovement(function, population)
+
+        #Remove solutions which are out of bounds
+        reinitialiseSolutions(function, population)
+
+        t += 1
+        
+        #Evaluate fitnesses
+        function.getFitnesses(population)
+        
+        if (t % OUTPUT_RATE == 0):
+            #output current data
+            progress = progress.append(formatProgress(t, population, progColumns), ignore_index = True)
             
-            #Mass calculations
-            calcMasses(population, best, worst)
-
-            #Force calculations
-            force(function, population, kbest, G)
-
-            #Calculate velocity and position
-            calcMovement(function, population)
-
-            #Remove solutions which are out of bounds
-            reinitialiseSolutions(function, population)
-
-            t += 1
-            
-            #Evaluate fitnesses
-            function.getFitnesses(population)
-            
-            if (t % OUTPUT_RATE == 0):
-                #output current data
-                outputProgress(t, population, writer)
-    
-    output(best, t, force, function, conditions)
+    progress.to_csv(function.desc + ".csv", index = False)
+    return output(best, t, force, function, conditions)
     
 
 
