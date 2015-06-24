@@ -9,7 +9,8 @@ from solution import Solution
 G_0 = 100
 ALPHA = 20
 MAX_T = 1000
-FIXED_TIME = 5
+FIXED_TIME_SHORT = 5
+FIXED_TIME_LONG = 20
 OUTPUT_RATE = 100
 OUTPUT_FILE = "out-"
 
@@ -75,24 +76,79 @@ def output(best, t, force, func, conditions):
 def getDist(sol, kth):
     return sqrt(np.sum((sol-kth)**2))
     
+def calculateBasicForce(dims, sol, kbest, G):
+    pos = sol.pos
+    result = np.zeros(dims)
+    for kth in kbest:
+        if sol is not kth:
+            kth_pos = kth.pos
+            dist = getDist(pos,kth_pos)
+            result += np.random.random(dims) * G * kth.mass * (kth_pos - pos) / dist
+    return result
+    
 def basicForce(func, pop, kbest, G):
     for sol in pop:
-        pos = sol.pos
-        sol.force = np.zeros(func.dims)
-        for kth in kbest:
-            if sol is not kth:
-                kth_pos = kth.pos
-                dist = getDist(pos,kth_pos)
-                sol.force += np.random.random(func.dims) * G * kth.mass * (kth_pos - pos) / dist
+        sol.force = calculateBasicForce(func.dims, sol, kbest, G)
     
 def iterationCondition(step, time):
     return step < MAX_T
     
-def timeCondition(step, time):
-    return time < FIXED_TIME
+def iterationUpdate(func, pop, step, time):
+    best, worst, G = 0, 0, 0
+    if func.max:
+        best = max(sol.fit for sol in pop)
+        worst = min(sol.fit for sol in pop)
+    else:
+        best = min(sol.fit for sol in pop)
+        worst = max(sol.fit for sol in pop)
+    G = G_0 * exp(-ALPHA * step/MAX_T)
+    k = int(ceil(len(pop) * (1 - step/MAX_T)))
+    if (func.max):
+        pop.sort(key=lambda sol: sol.fit, reverse=True)
+    else:
+        pop.sort(key=lambda sol: sol.fit)
+    return best, worst, G, pop[0:k]
+    
+def timeShortCondition(step, time):
+    return time < FIXED_TIME_SHORT
+    
+def timeShortUpdate(func, pop, step, time):
+    best, worst, G = 0, 0, 0
+    if func.max:
+        best = max(sol.fit for sol in pop)
+        worst = min(sol.fit for sol in pop)
+    else:
+        best = min(sol.fit for sol in pop)
+        worst = max(sol.fit for sol in pop)
+    G = G_0 * exp(-ALPHA * time/FIXED_TIME_SHORT)
+    k = int(ceil(len(pop) * (1 - time/FIXED_TIME_SHORT)))
+    if (func.max):
+        pop.sort(key=lambda sol: sol.fit, reverse=True)
+    else:
+        pop.sort(key=lambda sol: sol.fit)
+    return best, worst, G, pop[0:k]
+    
+def timeLongCondition(step, time):
+    return time < FIXED_TIME_LONG
+    
+def timeLongUpdate(func, pop, step, time):
+    best, worst, G = 0, 0, 0
+    if func.max:
+        best = max(sol.fit for sol in pop)
+        worst = min(sol.fit for sol in pop)
+    else:
+        best = min(sol.fit for sol in pop)
+        worst = max(sol.fit for sol in pop)
+    G = G_0 * exp(-ALPHA * time/FIXED_TIME_LONG)
+    k = int(ceil(len(pop) * (1 - time/FIXED_TIME_LONG)))
+    if (func.max):
+        pop.sort(key=lambda sol: sol.fit, reverse=True)
+    else:
+        pop.sort(key=lambda sol: sol.fit)
+    return best, worst, G, pop[0:k]
     
 #takes the function, population size, force calculator, stop condition, seed
-def gsa(function, pop_size, force, conditions, seed = None):
+def gsa(function, pop_size, force, conditions, outputProgress = True, seed = None):
     if seed is not None:
         random.seed(seed)
         np.random.seed(seed)
@@ -100,17 +156,16 @@ def gsa(function, pop_size, force, conditions, seed = None):
     function.getFitnesses(population)
 
     t = 0
-    #Track progress
-    progColumns = ["t"] + ["fitness" + str(i) for i in range(1,pop_size + 1)]
-    progress = pd.DataFrame(columns = progColumns)
-    progress = progress.append(formatProgress(t, population, progColumns), ignore_index = True)
+    if outputProgress:
+        #Track progress
+        progColumns = ["t"] + ["fitness" + str(i) for i in range(1,pop_size + 1)]
+        progress = pd.DataFrame(columns = progColumns)
+        progress = progress.append(formatProgress(t, population, progColumns), ignore_index = True)
     start = default_timer()
-    while (conditions(t,default_timer() - start)):
-        #Update functions
-        best, worst, G = update(function, population, t)
-
-        #Work out kbest
-        kbest = updateBest(function, population, t)
+    current_time = default_timer()
+    while (conditions(t,current_time - start)):
+        #Update best, worst, G and kbest
+        best, worst, G, kbest = conditions.update(function, population, t, current_time - start)
         
         #Mass calculations
         calcMasses(population, best, worst)
@@ -129,11 +184,12 @@ def gsa(function, pop_size, force, conditions, seed = None):
         #Evaluate fitnesses
         function.getFitnesses(population)
         
-        if (t % OUTPUT_RATE == 0):
+        if (outputProgress and t % OUTPUT_RATE == 0):
             #output current data
             progress = progress.append(formatProgress(t, population, progColumns), ignore_index = True)
-            
-    progress.to_csv(function.desc + ".csv", index = False)
+    print("Step"+t)
+    if outputProgress:
+        progress.to_csv(function.desc + ".csv", index = False)
     return output(best, t, force, function, conditions)
     
 
@@ -146,5 +202,9 @@ if __name__ == '__main__':
     main()
 else:
     iterationCondition.desc = "fixed-it"
-    timeCondition.desc = "fixed-time"
+    timeShortCondition.desc = "fixed-time-short"
+    timeLongCondition.desc = "fixed-time-long"
     basicForce.desc = "GSA"
+    iterationCondition.update = iterationUpdate
+    timeShortCondition.update = timeShortUpdate
+    timeLongCondition.update = timeLongUpdate

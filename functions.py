@@ -5,6 +5,12 @@ from numpy import sin, cos, pi, sum, prod
 
 from solution import Solution
 
+def FunctionMaker(num, upper, lower, dims, max, func, generator=None):
+    output = Function(num, upper, lower, dims, max)
+    output.getFitness = func
+    if generator is not None:
+        output.generateSolution = generator
+    return output
 
 class Function(object):
     def __init__(self, num, upper, lower, dims, maximisation):
