@@ -17,7 +17,7 @@ def main():
     result = pd.DataFrame(columns)
 
     #Run 23 original functions
-    for prob_num in range(12,num_funcs + 1):
+    for prob_num in range(1,num_funcs + 1):
         func = functions.getFunction(prob_num,dims)
         for force in forces:
             func.desc = str(prob_num) + "-" + force.desc
@@ -30,7 +30,7 @@ def main():
     #Run 15 CEC2013 functions
     result = pd.DataFrame(columns = columns)
 
-    for prob_num in range(2,3):#Benchmark().get_num_functions() + 1):
+    for prob_num in range(1,Benchmark().get_num_functions() + 1):
         info = Benchmark().get_info(prob_num)
         dims = info['dimension']
         cec_func = Benchmark().get_function(prob_num)
