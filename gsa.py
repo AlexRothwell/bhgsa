@@ -65,13 +65,13 @@ def reinitialiseSolutions(func, pop):
 def initialise(func, size):
     return [func.generateSolution() for i in range(size)]
     
-def formatProgress(t, pop, columns):
-    data = list(map(str,[t] + [sol.fit for sol in pop]))
+def formatProgress(t, time, pop, columns):
+    data = list(map(str,[t,time] + [sol.fit for sol in pop]))
     return pd.Series(dict(zip(columns,data)))
     
-def output(best, t, force, func, conditions):
-    data = list(map(str,[func.num, force.desc, best, t]))
-    return pd.Series(dict(zip(["FUNCTION","SOLVER","BEST","ITERATIONS"],data)))
+def output(columns, best, t, force, func, conditions, time):
+    data = list(map(str,[func.num, force.desc, best, t, time]))
+    return pd.Series(dict(zip(columns,data)))
 
 def getDist(sol, kth):
     return sqrt(np.sum((sol-kth)**2))
@@ -148,7 +148,7 @@ def timeLongUpdate(func, pop, step, time):
     return best, worst, G, pop[0:k]
     
 #takes the function, population size, force calculator, stop condition, seed
-def gsa(function, pop_size, force, conditions, outputProgress = True, seed = None):
+def gsa(function, pop_size, force, conditions, columns, outputProgress = True, seed = None):
     if seed is not None:
         random.seed(seed)
         np.random.seed(seed)
@@ -156,13 +156,13 @@ def gsa(function, pop_size, force, conditions, outputProgress = True, seed = Non
     function.getFitnesses(population)
 
     t = 0
-    if outputProgress:
-        #Track progress
-        progColumns = ["t"] + ["fitness" + str(i) for i in range(1,pop_size + 1)]
-        progress = pd.DataFrame(columns = progColumns)
-        progress = progress.append(formatProgress(t, population, progColumns), ignore_index = True)
     start = default_timer()
     current_time = default_timer()
+    if outputProgress:
+        #Track progress
+        progColumns = ["t","time"] + ["fitness" + str(i) for i in range(1,pop_size + 1)]
+        progress = pd.DataFrame(columns = progColumns)
+        progress = progress.append(formatProgress(t, 0, population, progColumns), ignore_index = True)
     while (conditions(t,current_time - start)):
         #Update best, worst, G and kbest
         best, worst, G, kbest = conditions.update(function, population, t, current_time - start)
@@ -184,13 +184,13 @@ def gsa(function, pop_size, force, conditions, outputProgress = True, seed = Non
         #Evaluate fitnesses
         function.getFitnesses(population)
         
+        current_time = default_timer()
         if (outputProgress and t % OUTPUT_RATE == 0):
             #output current data
-            progress = progress.append(formatProgress(t, population, progColumns), ignore_index = True)
-    print("Step"+t)
+            progress = progress.append(formatProgress(t, current_time- start, population, progColumns), ignore_index = True)
     if outputProgress:
         progress.to_csv(function.desc + ".csv", index = False)
-    return output(best, t, force, function, conditions)
+    return output(columns, best, t, force, function, conditions, current_time - start)
     
 
 
