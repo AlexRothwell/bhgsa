@@ -148,7 +148,7 @@ def timeLongUpdate(func, pop, step, time):
     return best, worst, G, pop[0:k]
     
 #takes the function, population size, force calculator, stop condition, seed
-def gsa(function, pop_size, force, conditions, columns, outputProgress = True, seed = None):
+def gsa(function, pop_size, force, conditions, columns, outputProgress = True, suffix = "", seed = None):
     if seed is not None:
         random.seed(seed)
         np.random.seed(seed)
@@ -189,7 +189,7 @@ def gsa(function, pop_size, force, conditions, columns, outputProgress = True, s
             #output current data
             progress = progress.append(formatProgress(t, current_time- start, population, progColumns), ignore_index = True)
     if outputProgress:
-        progress.to_csv(function.desc + ".csv", index = False)
+        progress.to_csv(function.desc + suffix  + ".csv", index = False)
     return output(columns, best, t, force, function, conditions, current_time - start)
     
 
